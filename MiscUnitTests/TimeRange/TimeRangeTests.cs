@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NodaTime;
 
@@ -11,64 +11,73 @@ namespace MiscUnitTests.TimeRange
         [TestMethod]
         public void IsBetweenExclusive_ValueIsBetween_True()
         {
-            Assert.IsTrue(GetLocalTime(0).IsBetweenExclusive(GetTimeSpan(23), GetTimeSpan(1), 2));
-            Assert.IsTrue(GetLocalTime(22).IsBetweenExclusive(GetTimeSpan(0), GetTimeSpan(6), 2));
-            Assert.IsTrue(GetLocalTime(23).IsBetweenExclusive(GetTimeSpan(1), GetTimeSpan(6), 2));
-            Assert.IsTrue(GetLocalTime(2).IsBetweenExclusive(GetTimeSpan(2), GetTimeSpan(3), 2));
-            Assert.IsTrue(GetLocalTime(8).IsBetweenExclusive(GetTimeSpan(6), GetTimeSpan(9), 2));
-            Assert.IsTrue(GetLocalTime(12).IsBetweenExclusive(GetTimeSpan(13), GetTimeSpan(20), 2));
-            Assert.IsTrue(GetLocalTime(12).IsBetweenExclusive(GetTimeSpan(10), GetTimeSpan(13), 2));
-            Assert.IsTrue(GetLocalTime(12).IsBetweenExclusive(GetTimeSpan(12), GetTimeSpan(12), 0));
+            Assert.IsTrue(GetTime(0).IsBetween(GetTime(23), GetTime(1), 2));
+            Assert.IsTrue(GetTime(5).IsBetween(GetTime(6), GetTime(6), 1));
+            Assert.IsTrue(GetTime(22).IsBetween(GetTime(0), GetTime(6), 2));
+            Assert.IsTrue(GetTime(23).IsBetween(GetTime(1), GetTime(6), 2));
+            Assert.IsTrue(GetTime(2).IsBetween(GetTime(2), GetTime(3), 2));
+            Assert.IsTrue(GetTime(8).IsBetween(GetTime(6), GetTime(9), 2));
+            Assert.IsTrue(GetTime(12).IsBetween(GetTime(13), GetTime(20), 2));
+            Assert.IsTrue(GetTime(12).IsBetween(GetTime(10), GetTime(13), 2));
+            Assert.IsTrue(GetTime(12).IsBetween(GetTime(12), GetTime(12), 0));
+            Assert.IsTrue(GetTime(11).IsBetween(GetTime(8), GetTime(11), 0));
         }
 
         [TestMethod]
         public void IsBetweenExclusive_ValueIsNotBetween_False()
         {
-            Assert.IsFalse(GetLocalTime(0).IsBetweenExclusive(GetTimeSpan(3), GetTimeSpan(6), 2));
-            Assert.IsFalse(GetLocalTime(23).IsBetweenExclusive(GetTimeSpan(2), GetTimeSpan(6), 2));
-            Assert.IsFalse(GetLocalTime(12).IsBetweenExclusive(GetTimeSpan(15), GetTimeSpan(19), 2));
-            Assert.IsFalse(GetLocalTime(12).IsBetweenExclusive(GetTimeSpan(3), GetTimeSpan(9), 2));
-            Assert.IsFalse(GetLocalTime(12).IsBetweenExclusive(GetTimeSpan(15), GetTimeSpan(20), 2));
-            Assert.IsFalse(GetLocalTime(12).IsBetweenExclusive(GetTimeSpan(6), GetTimeSpan(10), 2));
+            Assert.IsFalse(GetTime(0).IsBetween(GetTime(3), GetTime(6), 2));
+            Assert.IsFalse(GetTime(5).IsBetween(GetTime(6), GetTime(6), 0));
+            Assert.IsFalse(GetTime(23).IsBetween(GetTime(2), GetTime(6), 2));
+            Assert.IsFalse(GetTime(12).IsBetween(GetTime(15), GetTime(19), 2));
+            Assert.IsFalse(GetTime(12).IsBetween(GetTime(3), GetTime(9), 2));
+            Assert.IsFalse(GetTime(12).IsBetween(GetTime(15), GetTime(20), 2));
+            Assert.IsFalse(GetTime(13).IsBetween(GetTime(6), GetTime(10), 2));
         }
 
         [TestMethod]
         public void MergeRanges_ContainsItemsToMerge_ReturnsMergedItems()
         {
-            Assert.IsTrue(ScheduleTimeValidationService.MergeRanges(GetTestTimeRanges()).Count == 2);
+            List<(int, int)> rangeTuples = null;
+
+            rangeTuples = new List<(int, int)>();
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 0);
+
+            rangeTuples = new List<(int, int)> {(9, 9), (10, 11)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 2);
+
+            rangeTuples = new List<(int, int)> {(9, 10), (10, 11)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 1);
+
+            rangeTuples = new List<(int, int)> {(10, 11), (9, 10)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 1);
+
+            rangeTuples = new List<(int, int)> {(8, 10), (9, 11), (12, 18)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 2);
+
+            rangeTuples = new List<(int, int)> {(8, 10), (9, 11), (7, 12), (12, 18)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 1);
+
+            rangeTuples = new List<(int, int)> {(8, 10), (8, 10), (7, 11), (11, 12)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 1);
+
+            rangeTuples = new List<(int, int)> {(8, 10), (11, 13), (15, 17)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 3);
+
+            rangeTuples = new List<(int, int)> {(23, 0), (0, 1), (2, 3)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 2);
+
+            rangeTuples = new List<(int, int)> {(23, 1), (2, 3)};
+            Assert.AreEqual(TimeRangeHelper.MergeRanges(GetTestRanges(rangeTuples)).Count, 2);
         }
 
-        private static List<TimeRange> GetTestTimeRanges()
+        private static List<TimeRange> GetTestRanges(IEnumerable<(int, int)> rangeTuples)
         {
-            var ranges = new List<TimeRange>
-            {
-                new TimeRange(GetLocalTime(8), GetLocalTime(10)),
-                new TimeRange(GetLocalTime(9), GetLocalTime(11)),
-                new TimeRange(GetLocalTime(12), GetLocalTime(18))
-            };
-            return ranges;
+            return rangeTuples.Select(rangeTuple => new TimeRange(GetTime(rangeTuple.Item1), GetTime(rangeTuple.Item2)))
+                .ToList();
         }
 
-        //private static Tuple<LocalTime, LocalTime> GetTestTimeRange()
-        //{
-        //    //var item = new Tuple<LocalTime, LocalTime>(GetLocalTime(8), GetLocalTime(10));
-        //    var item = Tuple.Create(GetLocalTime(8), GetLocalTime(10));
-        //    return item;
-        //}
-
-        //private static (LocalTime, LocalTime) GetRange()
-        //{
-        //    var item = (GetLocalTime(8), GetLocalTime(10));
-        //    var (startTime, endTime) = (GetLocalTime(8), GetLocalTime(10));
-        //    return item;
-        //}
-
-        private static TimeSpan GetTimeSpan(int hours)
-        {
-            return new TimeSpan(hours, 0, 0);
-        }
-
-        private static LocalTime GetLocalTime(int hours)
+        private static LocalTime GetTime(int hours)
         {
             return new LocalTime(hours, 0, 0);
         }

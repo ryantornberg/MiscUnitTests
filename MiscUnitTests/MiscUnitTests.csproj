@@ -61,6 +61,7 @@
     <Compile Include="TimeRange\ExtensionMethods.cs" />
     <Compile Include="TimeRange\NodaTimeHelper.cs" />
     <Compile Include="TimeRange\ScheduleTimeValidationService.cs" />
+    <Compile Include="TimeRange\TimeSpanRange.cs" />
     <Compile Include="TimeRange\TimeRange.cs" />
     <Compile Include="TimeRange\TimeRangeHelper.cs" />
     <Compile Include="TimeRange\TimeRangeTests.cs" />
